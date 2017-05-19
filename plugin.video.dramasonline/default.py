@@ -246,26 +246,31 @@ def AddEnteries(Fromurl):
     #	match =re.findall('<img src="(.*?)" alt=".*".+<\/a>\n*.+<div class="post-title"><a href="(.*?)".*<b>(.*)<\/b>', link, re.UNICODE)
     #	print Fromurl
     #	match =re.findall('<div class="videopart">\s*<div class="paneleft">\s*<a class="pthumb" href="(.*?)" title="(.*?)".*?img.*?src="(.*?)" class="attachment-index-post-thumbnail wp-post-image"', link, re.M|re.DOTALL)
-    first='<a href="(.*?)".*?title="(.*?)".*?\s.*img.*?src="(.*?)"'
+   # first='<a href="(.*?)".*?title="(.*?)".*?\s.*img.*?src="(.*?)"'
+   # match =re.findall(first, link)
+   # first='<a href="(.*?)".*?title="(.*?)".*?\s*.*?div.*?\s*<img.*?src="(.*?)"'
+   # if len (match)==0:     
+   #     match =re.findall(first, link)
+    first='<a href="(.+?[^"])".*?\s*?\<img.*?src="(.+?[^"])".*?title="(.+?[^"])"'
     match =re.findall(first, link)
-    first='<a href="(.*?)".*?title="(.*?)".*?\s*.*?div.*?\s*<img.*?src="(.*?)"'
-    if len (match)==0:     
-        match =re.findall(first, link)
+    #if len (match)==0:     
+    #    match =re.findall(first, link)
         
  
     #print match
 
     for cname in match:
-        addDir(cname[1] ,cname[0] ,4,cname[2],isItFolder=False)
+        addDir(cname[2] ,cname[0] ,4,cname[1],isItFolder=False)
 
     nextpageurl=''
     if 'admin-ajax.php' in Fromurl:
         nextpageurl='http://dramaonline.com/wp-admin/admin-ajax.php$page$='+str(int(pagenum)+1)
     else:
-        match =re.findall('"nextLink":"(http.*?)"', link)
-    
-        if len(match)==1:
-            nextpageurl=match[0].replace('\\/','/') 
+        if 'class="paginate">' in link:
+            match =re.findall("<a href='(.*?)' class=", link.split('class="paginate">')[1].split('div')[0])
+            print 'next',match
+            if len(match)>0:
+                nextpageurl=match[-1]
     if len(nextpageurl)>0:
         addDir('Next Page' ,nextpageurl,3, '')
     #print 'match', match
