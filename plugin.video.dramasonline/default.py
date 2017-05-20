@@ -89,7 +89,7 @@ def get_params():
 def Addtypes():
     baseLink = 'http://dramaonline.com/%s-latest-dramas-episodes-online/'
     #2 is series=3 are links
-    addDir('All Recent Episodes' ,'http://dramaonline.com/wp-admin/admin-ajax.php$page$=1' ,3,'http://i.imgur.com/qSzxay9.png') #links
+    addDir('All Recent Episodes' ,'http://dramaonline.com/' ,3,'http://i.imgur.com/qSzxay9.png') #links
     addDir('HumTv Shows', 'http://www.dramaonline.com/hum-tv-new-dramas-episodes-online/' ,2,'http://i.imgur.com/SPbcdsI.png')
     addDir('GeoTv Shows', baseLink % 'geo-tv' ,2,'http://i.imgur.com/YELzFHv.png')
     addDir('PTV Home Shows', baseLink % 'ptv-home' ,2,'http://i.imgur.com/vJPo6xO.png')
@@ -129,7 +129,9 @@ def SearchDramas(Fromurl):
     if search=="": return
     print search
     selfAddon.setSetting( "searchkeyword" ,search)
-    url='http://dramaonline.com/wp-admin/admin-ajax.php?action=autocompleteCallback&term='+urllib.quote_plus(search)
+    url='http://dramaonline.com/?s='+urllib.quote_plus(search)
+    return AddEnteries(url)
+    ## skip and call add entries
     link = getHtml(url)
     import json
     jsdata=json.loads(link)
