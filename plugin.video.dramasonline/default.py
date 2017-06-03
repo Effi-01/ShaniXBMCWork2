@@ -433,33 +433,41 @@ def getYouTubeURL(html, short):
         return None
         
 def getTuneTvUrl(html, short):
-	try:
-		# Find the first match
-		playURL =re.search('(tune.pk.*\/embed_player.php\?\s*?vid=(\d+).*?)"',html)
-		print 'getTuneTvUrl: %s' % playURL
-		if short:
-			return playURL
+    try:
+        # Find the first match
+        playURL =re.search('(tune.pk.*\/embed_player.php\?\s*?vid=(\d+).*?)"',html)
+        print 'getTuneTvUrl: %s' % playURL
+        if short:
+            return playURL
 
-		if playURL is None:
-			return None
+        if playURL is None:
+            return None
 
-		print 'match: ' + playURL.group(1)
+        print 'match: ' + playURL.group(1)
 
-		playURL= 'http://embed.tune.pk/play/%s?autoplay=no&ssl=no' % playURL.group(2)
-		print playURL
+        playURL= 'http://embed.tune.pk/play/%s?autoplay=no&ssl=no' % playURL.group(2)
+        print playURL
 
-		link=getHtml(playURL)
-		pattern='file":"(.*?)"'
-		match =re.findall(pattern,link)
-		print 'match',match
-		stream_url=match[0]
-		print stream_url
-		stream_url=stream_url.replace('\\/','/')
-#		stream_url = urlresolver.HostedMediaFile(playURL).resolve()
-		return stream_url
-	except:
-		traceback.print_exc(file=sys.stdout)
-		return None
+        link=getHtml(playURL)
+        pattern='file":"(.*?)"'
+        match =re.findall(pattern,link)
+        if len(match)==0:
+            jsonurl=re.findall('requestURL.?=.?[\'"](.*?)[\'"]',link)[0]
+            jdata=getHtml(jsonurl)
+            import json
+            stream_url=json.loads(jdata)["data"]["details"]["player"]["sources"][0]["file"]
+        else:
+            print 'match',match
+            stream_url=match[0]
+        print stream_url
+        stream_url=stream_url.replace('\\/','/')
+        stream_url+="|User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36&Referer=https://embed.tune.pk/play/7133129?autoplay=no&ssl=yes&inline=true&refer=http%3A%2F%2Fdramaonline.com%2Ftitlee-episode-20-in-hd%2F"
+
+    #		stream_url = urlresolver.HostedMediaFile(playURL).resolve()
+        return stream_url
+    except:
+        traceback.print_exc(file=sys.stdout)
+        return None
 
 def getHtml(url, ref=None, post=None):
 	req = urllib2.Request(url)
@@ -582,119 +590,53 @@ def _play_from_available_sources(defaultLinkType, available_source, html):
 		return ret
 
 def PlayShowLink ( url ): 
-#	url = tabURL.replace('%s',channelName);
-	line1 = "Finding links"
-	xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%(__addonname__,line1, 1000, __icon__))
+    #	url = tabURL.replace('%s',channelName);
+    line1 = "Finding links"
+    xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%(__addonname__,line1, 1000, __icon__))
 
-	req = urllib2.Request(url)
-	req.add_header('User-Agent', 'Mozilla/5.0(iPad; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B314 Safari/531.21.10')
-	response = urllib2.urlopen(req)
-	link=response.read()
-	response.close()
-#	print url
-	urlToPlay=SelectUrl(link, url)
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', 'Mozilla/5.0(iPad; U; CPU iPhone OS 3_2 like Mac OS X; en-us) AppleWebKit/531.21.10 (KHTML, like Gecko) Version/4.0.4 Mobile/7B314 Safari/531.21.10')
+    response = urllib2.urlopen(req)
+    link=response.read()
+    response.close()
+    #	print url
+    urlToPlay=SelectUrl(link, url)
 
-	print 'urlToPlay: %s' % urlToPlay
+    print 'urlToPlay: %s' % urlToPlay
 
-	if urlToPlay:
-		if not urlToPlay.startswith('youtube:'):
-			playlist = xbmc.PlayList(1)
-			playlist.clear()
-			listitem = xbmcgui.ListItem(name, iconImage="DefaultVideo.png")
-			listitem.setInfo("Video", {"Title":name})
-			listitem.setProperty('mimetype', 'video/x-msvideo')
-			listitem.setProperty('IsPlayable', 'true')
-			playlist.add(urlToPlay,listitem)
-			xbmcPlayer = xbmc.Player()
-			xbmcPlayer.play(playlist)
-		else:
-			playlist=None
-			print urlToPlay.split('youtube:')[1].split(',')
-			for youtubevid in urlToPlay.split('youtube:')[1].split(','):
-				playlist = xbmc.PlayList(1)
-				playlist.clear()
-				listitem = xbmcgui.ListItem(name, iconImage="DefaultVideo.png")
-				listitem.setInfo("Video", {"Title":name})
-				listitem.setProperty('mimetype', 'video/x-msvideo')
-				listitem.setProperty('IsPlayable', 'true')
-				uurl = 'plugin://plugin.video.youtube/?action=play_video&videoid=%s' % youtubevid
-				playlist.add(uurl,listitem)
-			xbmcPlayer = xbmc.Player()
-			xbmcPlayer.play(playlist)
-				
-				#xbmc.executebuiltin("xbmc.PlayMedia("+uurl+")")
-	return 
-	
-	line1 = "Playing DM Link"
-	time = 5000  #in miliseconds
-	defaultLinkType=0 #0 youtube,1 DM,2 tunepk
-	defaultLinkType=selfAddon.getSetting( "DefaultVideoType" ) 
-	#print defaultLinkType
-	#print "LT link is" ;8+ linkType
-	# if linktype is no;t provided then use the defaultLinkType
-	linkType="LINK"
-	if linkType=="DM" or (linkType=="" and defaultLinkType=="1"):
-		#print "PlayDM"
-		line1 = "Playing DM Link"
-		xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%(__addonname__,line1, time, __icon__))
-#		print link
-		playURL= match =re.findall('src="(.*?(dailymotion).*?)"',link)
-		playURL=match[0][0]
-		print playURL
-		playlist = xbmc.PlayList(1)
-		playlist.clear()
-		listitem = xbmcgui.ListItem(name, iconImage="DefaultVideo.png")
-		listitem.setInfo("Video", {"Title":name})
-		listitem.setProperty('mimetype', 'video/x-msvideo')
-		listitem.setProperty('IsPlayable', 'true')
-		stream_url = urlresolver.HostedMediaFile(playURL).resolve()
-		print stream_url
-		playlist.add(stream_url,listitem)
-		xbmcPlayer = xbmc.Player()
-		xbmcPlayer.play(playlist)
-#src="(.*?(dailymotion).*?)"
-	elif  linkType=="LINK"  or (linkType=="" and defaultLinkType=="2"):
-		line1 = "Playing Tune.pk Link"
-		xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%(__addonname__,line1, time, __icon__))
+    if urlToPlay:
+        if not urlToPlay.startswith('youtube:'):
+            playlist = xbmc.PlayList(1)
+            playlist.clear()
+            listitem = xbmcgui.ListItem(name, iconImage="DefaultVideo.png")
+            listitem.setInfo("Video", {"Title":name})
+            if '.mp4' in urlToPlay:
+                listitem.setProperty('mimetype', 'video/mp4')
+                listitem.setContentLookup(False)
+            else:
+                listitem.setProperty('mimetype', 'video/x-msvideo')
+            listitem.setProperty('IsPlayable', 'true')
+            playlist.add(urlToPlay,listitem)
+            xbmcPlayer = xbmc.Player()
+            xbmcPlayer.play(playlist)
+        else:
+            playlist=None
+            print urlToPlay.split('youtube:')[1].split(',')
+            for youtubevid in urlToPlay.split('youtube:')[1].split(','):
+                playlist = xbmc.PlayList(1)
+                playlist.clear()
+                listitem = xbmcgui.ListItem(name, iconImage="DefaultVideo.png")
+                listitem.setInfo("Video", {"Title":name})
+                listitem.setProperty('mimetype', 'video/x-msvideo')
+                listitem.setProperty('IsPlayable', 'true')
+                uurl = 'plugin://plugin.video.youtube/?action=play_video&videoid=%s' % youtubevid
+                playlist.add(uurl,listitem)
+            xbmcPlayer = xbmc.Player()
+            xbmcPlayer.play(playlist)
+                
+                #xbmc.executebuiltin("xbmc.PlayMedia("+uurl+")")
+    return 
 
-		print "PlayLINK"
-		playURL= match =re.findall('<strong>Tune\s*[fU]ull<\/strong>\s*.*?src="(.*?)"', link, re.IGNORECASE)
-		print 'playURL',playURL
-		if len(playURL)<=0:
-			line1 = "Tune not found, trying Daily motion"
-			xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%(__addonname__,line1, time, __icon__))
-			playURL= match =re.findall('<strong>Daily.*.*full.*<\/strong>\s*.*?src="(.*?(daily).*?)"', link,re.IGNORECASE)
-		
-		if len(playURL)<=0:
-			line1 = "Link not found, check the website for Full Tune or Daily motion lists"
-			xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%(__addonname__,line1, time, __icon__))
-			return;
-		playURL=match[0]# check if not found then try other methods
-		print playURL
-		playlist = xbmc.PlayList(1)
-		playlist.clear()
-		listitem = xbmcgui.ListItem(name, iconImage="DefaultVideo.png")
-		listitem.setInfo("Video", {"Title":name})
-		listitem.setProperty('mimetype', 'video/x-msvideo')
-		listitem.setProperty('IsPlayable', 'true')
-		stream_url = urlresolver.HostedMediaFile(playURL).resolve()
-		print stream_url
-		playlist.add(stream_url,listitem)
-		xbmcPlayer = xbmc.Player()
-		xbmcPlayer.play(playlist)
-
-#src="(.*?(tune\.pk).*?)"
-	else:	#either its default or nothing selected
-		line1 = "Playing Youtube Link"
-		xbmc.executebuiltin('Notification(%s, %s, %d, %s)'%(__addonname__,line1, time, __icon__))
-		youtubecode= match =re.findall('<strong>Youtube<\/strong>.*?src=\".*?embed\/(.*?)\?.*\".*?<\/iframe>', link,re.DOTALL| re.IGNORECASE)
-		youtubecode=youtubecode[0]
-		uurl = 'plugin://plugin.video.youtube/?action=play_video&videoid=%s' % youtubecode
-#	print uurl
-		xbmc.executebuiltin("xbmc.PlayMedia("+uurl+")")
-	
-	return
-	
 
 
 def PlayLiveLink ( url ): 

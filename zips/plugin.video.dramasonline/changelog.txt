@@ -1,3 +1,5 @@
+[B]Version 2.6.8[/B]
+tunepk link
 [B]Version 2.6.7[/B]
 website changes, latest episodes and search, fixed
 [B]Version 2.6.6[/B]
